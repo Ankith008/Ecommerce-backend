@@ -15,7 +15,7 @@ const handleAccessToken = async (req, res, next) => {
     console.log(client);
     req.user = client.id;
     next();
-  } catch (error) {
+  } catch (userError) {
     try {
       const delivery = jwt.verify(
         token,
@@ -23,7 +23,7 @@ const handleAccessToken = async (req, res, next) => {
       );
       req.delivery = delivery.id;
       next();
-    } catch (error) {
+    } catch (deliveryError) {
       try {
         const company = jwt.verify(
           token,
@@ -31,7 +31,7 @@ const handleAccessToken = async (req, res, next) => {
         );
         req.company = company.id;
         next();
-      } catch (error) {
+      } catch (companyError) {
         return res.status(403).json({ error: "Not Authorized" });
       }
     }

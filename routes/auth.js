@@ -622,22 +622,16 @@ router.post("/refresh", handleRefreshToken);
 
 //testing
 
-router.post("/order", async (req, res) => {
+router.post("/order", handleAccessToken, async (req, res) => {
   try {
-    const data = req.headers.authorization;
-
-    if (
-      !data ||
-      !data.startsWith("Bearer ") ||
-      data.split(" ")[1] === "undefined"
-    ) {
-      return res.status(403).json({ error: "Not Authorized" });
-    }
-    const token = data.split(" ")[1];
-    const user = jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET);
-    return res.json({ success: true, user });
+    const user = await User.findById(req.user);
+    return res.json({
+      success: true,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+    });
   } catch (error) {
-    console.log(error);
     return res.status(403).json({ error: "Internal Server Issue" });
   }
 });

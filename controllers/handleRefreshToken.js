@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../model/User");
+const Company = require("../model/Company");
+const Delivery = require("../model/Delivery");
 require("dotenv").config({ path: "backend.env" });
 
 const handleRefreshToken = async (req, res) => {
@@ -14,65 +16,89 @@ const handleRefreshToken = async (req, res) => {
     secure: true,
   });
 
+  let roles;
+  let model;
+  let accesskey;
+  let refreshkey;
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.USER_REFRESH_TOKEN_SECRET
+    );
+    roles = "User";
+    model = User;
+    accesskey = process.env.USER_ACCESS_TOKEN_SECRET;
+    refreshkey = process.env.USER_REFRESH_TOKEN_SECRET;
+  } catch (error) {
+    try {
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.COMPANY_REFRESH_TOKEN_SECRET
+      );
+      roles = "Company";
+      model = Company;
+      accesskey = process.env.COMPANY_ACCESS_TOKEN_SECRET;
+      refreshkey = process.env.COMPANY_REFRESH_TOKEN_SECRET;
+    } catch (error) {
+      try {
+        const decoded = jwt.verify(
+          refreshToken,
+          process.env.DELIVERY_REFRESH_TOKEN_SECRET
+        );
+        roles = "Delivery boy";
+        model = Delivery;
+        accesskey = process.env.DELIVERY_ACCESS_TOKEN_SECRET;
+        refreshkey = process.env.DELIVERY_REFRESH_TOKEN_SECRET;
+      } catch (error) {
+        return res.status(403).json({ error: "Invalid token" });
+      }
+    }
+  }
+
   // checking reuse of refresh token
-  const foundUser = await User.findOne({ refreshToken }, { password: 0 });
+  const foundUser = await model.findOne({ refreshToken }, { password: 0 });
 
   //delete refresh token from db if user is not found
   if (!foundUser) {
-    jwt.verify(
-      refreshToken,
-      process.env.USER_REFRESH_TOKEN_SECRET,
-      async (err, user) => {
-        if (err) return res.status(403);
-        const hackedUser = await User.findById(user.id);
-        hackedUser.refreshToken = [];
-        const result = await hackedUser.save();
-        await hackedUser.save();
-      }
-    );
+    try {
+      const decoded = jwt.verify(refreshToken, refreshkey);
+      const hackedUser = await model.findById(decoded.id);
+      hackedUser.refreshToken = [];
+      await hackedUser.save();
+    } catch (error) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
     return res.status(403);
   }
-  // Generate new access token
 
+  // Generate new access token
   const newRefreshTokenArray = foundUser.refreshToken.filter(
     (rt) => rt !== refreshToken
   );
-  jwt.verify(
-    refreshToken,
-    process.env.USER_REFRESH_TOKEN_SECRET,
-    async (err, user) => {
-      if (err) {
-        foundUser.refreshToken = [...newRefreshTokenArray];
-        await foundUser.save();
-        return res.status(403).json({ error: "invalid token" });
-      }
-      if (err || foundUser.id !== user.id) return res.status(403);
-      const roles = foundUser.role;
 
-      const data = {
-        id: user.id,
-        role: roles,
-      };
-      const accessToken = jwt.sign(data, process.env.USER_ACCESS_TOKEN_SECRET, {
-        expiresIn: "15s",
-      });
-      const newrefreshToken = jwt.sign(
-        data,
-        process.env.USER_REFRESH_TOKEN_SECRET,
-        {
-          expiresIn: "15d",
-        }
-      );
-      foundUser.refreshToken = [...newRefreshTokenArray, newrefreshToken];
-      await foundUser.save();
-      res.cookie("refreshToken", newrefreshToken, {
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-        maxAge: 15 * 24 * 60 * 60 * 1000,
-      });
-      res.json({ accessToken, user: foundUser });
-    }
-  );
+  jwt.verify(refreshToken, refreshkey, async (err, user) => {
+    if (err || foundUser.id !== user.id) return res.status(403);
+    const data = {
+      id: user.id,
+      role: roles,
+    };
+    const accessToken = jwt.sign(data, accesskey, {
+      expiresIn: "15s",
+    });
+    const newrefreshToken = jwt.sign(data, refreshkey, {
+      expiresIn: "15d",
+    });
+    foundUser.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+    await foundUser.save();
+    res.cookie("refreshToken", newrefreshToken, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    });
+    res.json({ accessToken });
+  });
 };
+
 module.exports = handleRefreshToken;
