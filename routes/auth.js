@@ -13,7 +13,6 @@ const Product = require("../model/Product");
 const Delivery = require("../model/Delivery");
 const Company = require("../model/Company");
 const Store = require("../model/Stores");
-const path = require("path");
 require("dotenv").config({ path: "backend.env" });
 const handleRefreshToken = require("../controllers/handleRefreshToken");
 const handleAccessToken = require("../middleware/handleAccessToken");
@@ -37,6 +36,7 @@ router.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
+    const cookies = req.cookies;
     if (!errors.isEmpty()) {
       console.log(errors.array());
       return res.json({
@@ -53,7 +53,7 @@ router.post(
         public_id: unique,
       });
       const url = result.secure_url;
-      const { name, email, phoneNumber, password } = req.body;
+      const { name, email, phoneNumber, password, Address } = req.body;
       let user = await User.findOne({ email: email });
       if (user) {
         return res.status(409).json({
@@ -72,6 +72,7 @@ router.post(
         phoneNumber: phoneNumber,
         password: secpass,
         whatheis: "User",
+        Address: Address,
       });
       const data = {
         id: user.id,
@@ -79,20 +80,25 @@ router.post(
       };
 
       const accessToken = jwt.sign(data, process.env.USER_ACCESS_TOKEN_SECRET, {
-        expiresIn: "15s",
+        expiresIn: "15m",
       });
 
-      const refreshToken = jwt.sign(
+      const newrefreshToken = jwt.sign(
         data,
         process.env.USER_REFRESH_TOKEN_SECRET,
         {
           expiresIn: "15d",
         }
       );
-      user.refreshToken = refreshToken;
+
+      const newRefreshTokenArray = !cookies.refreshToken
+        ? user.refreshToken
+        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
+
+      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
       await user.save();
 
-      res.cookie("refreshToken", refreshToken, {
+      res.cookie("refreshToken", newrefreshToken, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
@@ -139,7 +145,7 @@ router.post(
       };
 
       const accessToken = jwt.sign(data, process.env.USER_ACCESS_TOKEN_SECRET, {
-        expiresIn: "15s",
+        expiresIn: "15m",
       });
 
       const newrefreshToken = jwt.sign(
@@ -238,20 +244,42 @@ router.post(
         whatheis: "DeliveryBoy",
       });
       const data = {
-        user: {
-          id: user.id,
-        },
+        id: user.id,
         role: "Delivery boy",
       };
-      const authtoken = jwt.sign(data, process.env.SECRET_KEY);
 
-      res.cookie("authtoken", authtoken, {
+      const accessToken = jwt.sign(
+        data,
+        process.env.DELIVERY_ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "15m",
+        }
+      );
+
+      const newrefreshToken = jwt.sign(
+        data,
+        process.env.DELIVERY_REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "15d",
+        }
+      );
+
+      const newRefreshTokenArray = !cookies.refreshToken
+        ? user.refreshToken
+        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
+
+      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+
+      await user.save();
+
+      res.cookie("refreshToken", newrefreshToken, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
+        maxAge: 1000 * 60 * 60 * 24 * 15,
       });
 
-      return res.json({ success: true, authtoken });
+      return res.status(200).json({ success: true, accessToken });
     } catch (error) {
       console.log(error);
       return res.status(500).send("Internal Server Issue");
@@ -290,20 +318,42 @@ router.post(
         });
       }
       const data = {
-        user: {
-          id: user.id,
-        },
+        id: user.id,
         role: "Delivery boy",
       };
-      const authtoken = jwt.sign(data, process.env.SECRET_KEY);
 
-      res.cookie("deliveryboy_auth_token", authtoken, {
+      const accessToken = jwt.sign(
+        data,
+        process.env.DELIVERY_ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "15s",
+        }
+      );
+
+      const newrefreshToken = jwt.sign(
+        data,
+        process.env.DELIVERY_REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "15d",
+        }
+      );
+
+      const newRefreshTokenArray = !cookies.refreshToken
+        ? user.refreshToken
+        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
+
+      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+
+      await user.save();
+
+      res.cookie("refreshToken", newrefreshToken, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
+        maxAge: 1000 * 60 * 60 * 24 * 15,
       });
 
-      return res.json({ success: true, authtoken });
+      return res.status(200).json({ success: true, accessToken });
     } catch (error) {
       return res
         .status(500)
@@ -312,83 +362,88 @@ router.post(
   }
 );
 
-//stores auth
+// stores auth
 
-// router.post(
-//   "/createStore",
-//   fetchcompany,
-//   multerUploads,
-//   [
-//     body("storename").isLength({ min: 3 }),
-//     body("storeIncharegename").isLength({ min: 3 }),
-//     body("storeIncharegenumber").exists(),
-//     body("storeAddress").isLength({ min: 3 }),
-//     body("storeemail").isEmail(),
-//   ],
-//   async (req, res) => {
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//       return res.json({
-//         success: false,
-//         error: "Input Requirement is not fullfilled",
-//       });
-//     }
-//     try {
-//       let unique = uuidv4();
-//       const b64 = Buffer.from(req.file.buffer).toString("base64");
-//       let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-//       const result = await cloudinary.uploader.upload(dataURI, {
-//         folder: "Ecommers Stores",
-//         public_id: unique,
-//       });
-//       const url = result.secure_url;
-//       const {
-//         storename,
-//         storeBranch,
-//         storeIncharegename,
-//         storeIncharegenumber,
-//         storeAddress,
-//         storeemail,
-//         categories,
-//       } = req.body;
-//       let store = await Store.findOne({
-//         storeemail: storeemail,
-//       });
-//       if (store) {
-//         return res.status(409).json({
-//           success: false,
-//           error: "Store Already Present",
-//         });
-//       }
+router.post(
+  "/createStore",
+  handleAccessToken,
+  multerUploads,
+  [
+    body("storename").isLength({ min: 3 }),
+    body("storeIncharegename").isLength({ min: 3 }),
+    body("storeIncharegenumber").exists(),
+    body("storeAddress").isLength({ min: 3 }),
+    body("storeemail").isEmail(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.json({
+        success: false,
+        error: "Input Requirement is not fullfilled",
+      });
+    }
+    try {
+      let unique = uuidv4();
+      const b64 = Buffer.from(req.file.buffer).toString("base64");
+      let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: "Ecommers Stores",
+        public_id: unique,
+      });
+      const url = result.secure_url;
+      const {
+        storename,
+        storeBranch,
+        storeIncharegename,
+        storeIncharegenumber,
+        storeAddress,
+        storeemail,
+        categories,
+      } = req.body;
+      let store = await Store.findOne({
+        storeemail: storeemail,
+      });
+      if (store) {
+        return res.status(409).json({
+          success: false,
+          error: "Store Already Present",
+        });
+      }
 
-//       store = await Store.create({
-//         profile: url,
-//         storename: storename,
-//         storeBranch: storeBranch,
-//         storeIncharegename: storeIncharegename,
-//         storeIncharegenumber: storeIncharegenumber,
-//         storeAddress: storeAddress,
-//         storeemail: storeemail,
-//         companyname: req.company.id,
-//         categories: categories,
-//         whatheis: "Store",
-//       });
+      store = await Store.create({
+        profile: url,
+        storename: storename,
+        storeBranch: storeBranch,
+        storeIncharegename: storeIncharegename,
+        storeIncharegenumber: storeIncharegenumber,
+        storeAddress: storeAddress,
+        storeemail: storeemail,
+        companyname: req.company,
+        categories: categories,
+        whatheis: "Store",
+      });
 
-//       await store.save();
+      await store.save();
 
-//       const company = await Company.findByIdAndUpdate(
-//         req.company.id,
-//         { $push: { stores: store.id } },
-//         { new: true }
-//       );
+      const comp = await Company.findByIdAndUpdate(req.company);
+      if (!comp) {
+        return res.status(404).json({ success: false, error: "Not Found" });
+      }
 
-//       res.json({ success: true });
-//     } catch (error) {
-//       console.log(error);
-//       res.status(500).send("Internal Server Issue");
-//     }
-//   }
-// );
+      const company = await Company.findByIdAndUpdate(
+        req.company,
+        { $push: { stores: store._id } },
+        { new: true }
+      );
+
+      return res.json({ success: true });
+    } catch (error) {
+      console.log(error);
+      res.status(500).send("Internal Server Issue");
+    }
+  }
+);
 
 // company auth
 
@@ -405,6 +460,7 @@ router.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
+    const cookies = req.cookies;
     if (!errors.isEmpty()) {
       return res.json({
         success: false,
@@ -452,19 +508,42 @@ router.post(
         whatheis: "Company",
       });
       const data = {
-        user: {
-          id: user.id,
-        },
+        id: user.id,
+
         role: "Company",
       };
-      const authtoken = jwt.sign(data, process.env.SECRET_KEY);
-      res.cookie("company_auth_token", authtoken, {
+      const accessToken = jwt.sign(
+        data,
+        process.env.COMPANY_ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "15s",
+        }
+      );
+
+      const newrefreshToken = jwt.sign(
+        data,
+        process.env.COMPANY_REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "15d",
+        }
+      );
+
+      const newRefreshTokenArray = !cookies.refreshToken
+        ? user.refreshToken
+        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
+
+      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+
+      await user.save();
+
+      res.cookie("refreshToken", newrefreshToken, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
+        maxAge: 1000 * 60 * 60 * 24 * 15,
       });
 
-      res.json({ success: true, authtoken });
+      return res.status(200).json({ success: true, accessToken });
     } catch (error) {
       res.status(500).send("Internal Server Issue");
     }
@@ -478,6 +557,7 @@ router.post(
     body("companypassword").isLength({ min: 5 }),
   ],
   async (req, res) => {
+    const cookies = req.cookies;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.json({
@@ -487,6 +567,7 @@ router.post(
     }
     try {
       const { companyemail, companypassword } = req.body;
+
       let user = await Company.findOne({ companyemail });
       if (!user) {
         return res.status(404).json({ success: false, error: "Not Found" });
@@ -502,21 +583,44 @@ router.post(
         });
       }
       const data = {
-        user: {
-          id: user.id,
-        },
+        id: user.id,
+
         role: "Company",
       };
-      const authtoken = jwt.sign(data, process.env.SECRET_KEY);
+      const accessToken = jwt.sign(
+        data,
+        process.env.COMPANY_ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "15s",
+        }
+      );
 
-      res.cookie("company_auth_token", authtoken, {
+      const newrefreshToken = jwt.sign(
+        data,
+        process.env.COMPANY_REFRESH_TOKEN_SECRET,
+        {
+          expiresIn: "15d",
+        }
+      );
+
+      const newRefreshTokenArray = !cookies.refreshToken
+        ? user.refreshToken
+        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
+
+      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+
+      await user.save();
+
+      res.cookie("refreshToken", newrefreshToken, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
+        maxAge: 1000 * 60 * 60 * 24 * 15,
       });
 
-      res.json({ success: true, authtoken });
+      return res.status(200).json({ success: true, accessToken });
     } catch (error) {
+      console.log(error);
       res.status(500).json({ success: false, error: "Internal Server Issue" });
     }
   }
@@ -586,9 +690,8 @@ router.post(
         whatheis: "Product",
       });
       const data = {
-        user: {
-          id: user.id,
-        },
+        id: user.id,
+
         role: "Product",
       };
       const authtoken = jwt.sign(data, process.env.SECRET_KEY);
@@ -624,12 +727,10 @@ router.post("/refresh", handleRefreshToken);
 
 router.post("/order", handleAccessToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user);
+    const user = await Company.findById(req.company);
+
     return res.json({
       success: true,
-      name: user.name,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
     });
   } catch (error) {
     return res.status(403).json({ error: "Internal Server Issue" });

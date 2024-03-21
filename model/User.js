@@ -35,6 +35,9 @@ const UserSchema = new Schema({
       type: String,
     },
   ],
+  Address: {
+    type: String,
+  },
   profile: {
     type: String,
   },

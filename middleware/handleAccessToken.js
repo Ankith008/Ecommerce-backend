@@ -10,28 +10,29 @@ const handleAccessToken = async (req, res, next) => {
     return res.status(403).json({ error: "Not Authorized" });
   }
   const token = data.split(" ")[1];
+
   try {
-    const client = jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET);
-    console.log(client);
-    req.user = client.id;
+    const decodeduser = jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET);
+    req.user = decodeduser.id;
     next();
-  } catch (userError) {
+  } catch (error) {
     try {
-      const delivery = jwt.verify(
+      const decodedcom = jwt.verify(
         token,
-        process.env.DELIVERY_ACCESS_TOKEN_SECRET
+        process.env.COMPANY_ACCESS_TOKEN_SECRET
       );
-      req.delivery = delivery.id;
+      req.company = decodedcom.id;
       next();
-    } catch (deliveryError) {
+    } catch (error) {
       try {
-        const company = jwt.verify(
+        const decodeddev = jwt.verify(
           token,
-          process.env.COMPANY_ACCESS_TOKEN_SECRET
+          process.env.DELIVERY_ACCESS_TOKEN_SECRET
         );
-        req.company = company.id;
+
+        req.delivery = decodeddev.id;
         next();
-      } catch (companyError) {
+      } catch (error) {
         return res.status(403).json({ error: "Not Authorized" });
       }
     }

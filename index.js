@@ -19,4 +19,5 @@ app.use(
 );
 
 app.use("/auth", require("./routes/auth"));
+app.use("/find", require("./routes/find"));
 app.listen(5000);
