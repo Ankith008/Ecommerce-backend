@@ -64,7 +64,7 @@ const handleRefreshToken = async (req, res) => {
     try {
       const decoded = jwt.verify(refreshToken, refreshkey);
       const hackedUser = await model.findById(decoded.id);
-      hackedUser.refreshToken = [];
+      hackedUser.refreshToken = "";
       await hackedUser.save();
     } catch (error) {
       return res.status(403).json({ error: "Invalid token" });
@@ -73,9 +73,6 @@ const handleRefreshToken = async (req, res) => {
   }
 
   // Generate new access token
-  const newRefreshTokenArray = foundUser.refreshToken.filter(
-    (rt) => rt !== refreshToken
-  );
 
   jwt.verify(refreshToken, refreshkey, async (err, user) => {
     if (err || foundUser.id !== user.id) return res.status(403);
@@ -84,12 +81,12 @@ const handleRefreshToken = async (req, res) => {
       role: roles,
     };
     const accessToken = jwt.sign(data, accesskey, {
-      expiresIn: "15s",
+      expiresIn: "15m",
     });
     const newrefreshToken = jwt.sign(data, refreshkey, {
       expiresIn: "15d",
     });
-    foundUser.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+    foundUser.refreshToken = newrefreshToken;
     await foundUser.save();
     res.cookie("refreshToken", newrefreshToken, {
       httpOnly: true,
@@ -97,7 +94,7 @@ const handleRefreshToken = async (req, res) => {
       secure: true,
       maxAge: 15 * 24 * 60 * 60 * 1000,
     });
-    res.json({ accessToken });
+    return res.json({ accessToken });
   });
 };
 

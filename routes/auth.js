@@ -91,11 +91,7 @@ router.post(
         }
       );
 
-      const newRefreshTokenArray = !cookies.refreshToken
-        ? user.refreshToken
-        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
-
-      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+      user.refreshToken = newrefreshToken;
       await user.save();
 
       res.cookie("refreshToken", newrefreshToken, {
@@ -156,11 +152,7 @@ router.post(
         }
       );
 
-      const newRefreshTokenArray = !cookies.refreshToken
-        ? user.refreshToken
-        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
-
-      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+      user.refreshToken = newrefreshToken;
 
       await user.save();
 
@@ -264,11 +256,7 @@ router.post(
         }
       );
 
-      const newRefreshTokenArray = !cookies.refreshToken
-        ? user.refreshToken
-        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
-
-      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+      user.refreshToken = newrefreshToken;
 
       await user.save();
 
@@ -326,7 +314,7 @@ router.post(
         data,
         process.env.DELIVERY_ACCESS_TOKEN_SECRET,
         {
-          expiresIn: "15s",
+          expiresIn: "15m",
         }
       );
 
@@ -338,11 +326,7 @@ router.post(
         }
       );
 
-      const newRefreshTokenArray = !cookies.refreshToken
-        ? user.refreshToken
-        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
-
-      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+      user.refreshToken = newrefreshToken;
 
       await user.save();
 
@@ -516,7 +500,7 @@ router.post(
         data,
         process.env.COMPANY_ACCESS_TOKEN_SECRET,
         {
-          expiresIn: "15s",
+          expiresIn: "15m",
         }
       );
 
@@ -528,11 +512,7 @@ router.post(
         }
       );
 
-      const newRefreshTokenArray = !cookies.refreshToken
-        ? user.refreshToken
-        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
-
-      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+      user.refreshToken = newrefreshToken;
 
       await user.save();
 
@@ -591,7 +571,7 @@ router.post(
         data,
         process.env.COMPANY_ACCESS_TOKEN_SECRET,
         {
-          expiresIn: "15s",
+          expiresIn: "15m",
         }
       );
 
@@ -603,11 +583,7 @@ router.post(
         }
       );
 
-      const newRefreshTokenArray = !cookies.refreshToken
-        ? user.refreshToken
-        : user.refreshToken.filter((rt) => rt !== cookies.refreshToken);
-
-      user.refreshToken = [...newRefreshTokenArray, newrefreshToken];
+      user.refreshToken = newrefreshToken;
 
       await user.save();
 

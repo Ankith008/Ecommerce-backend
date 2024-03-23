@@ -21,4 +21,15 @@ router.get("/stores", handleAccessToken, async (req, res) => {
   }
 });
 
+router.get("/store/:id", handleAccessToken, async (req, res) => {
+  try {
+    const storeid = req.params.id.toString();
+    const store = await Store.findById(storeid).populate("products");
+    res.status(200).json({ store });
+  } catch (error) {
+    console.error("Error finding store:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 module.exports = router;

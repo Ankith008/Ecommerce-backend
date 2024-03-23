@@ -39,6 +39,8 @@ const CompanySchema = new Schema({
   whatheis: {
     type: String,
   },
-  refreshToken: [String],
+  refreshToken: {
+    type: String,
+  },
 });
 module.exports = mongoose.model("Company", CompanySchema);
