@@ -4,6 +4,7 @@ const User = require("../model/User");
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const multerUploads = multer({ storage }).single("profile");
+const multerUploads1 = multer({ storage }).array("profile", 5);
 const { v2: cloudinary } = require("cloudinary");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcryptjs");
@@ -16,6 +17,7 @@ const Store = require("../model/Stores");
 require("dotenv").config({ path: "backend.env" });
 const handleRefreshToken = require("../controllers/handleRefreshToken");
 const handleAccessToken = require("../middleware/handleAccessToken");
+const handledetails = require("../controllers/handledetails");
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -606,15 +608,14 @@ router.post(
 
 router.post(
   "/createproduct",
-  multerUploads,
+  handleAccessToken,
+  multerUploads1,
   [
     body("Productname").isLength({ min: 3 }),
-    body("companyowner").isLength({ min: 3 }),
-    body("companyemail").isEmail(),
-
-    body("companyownernumber").isLength(10).isNumeric(),
-    body("companypassword").isLength({ min: 5 }),
-    body("companylocation").isLength({ min: 5 }),
+    body("Productsize").isLength({ min: 1 }),
+    body("Productprice").isLength({ min: 1 }),
+    body("describtion").isLength({ min: 10 }),
+    body("ProductCategorie").isLength({ min: 3 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -625,61 +626,59 @@ router.post(
       });
     }
     try {
-      let unique = uuidv4();
-      const b64 = Buffer.from(req.file.buffer).toString("base64");
-      let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-      const result = await cloudinary.uploader.upload(dataURI, {
-        folder: "Ecommers Products",
-        public_id: unique,
-      });
-      const url = result.secure_url;
-      const {
-        companyname,
-        companyowner,
-        companyownernumber,
-        companyemail,
-        companypassword,
-        companylocation,
-      } = req.body;
-      let user = await Company.findOne({
-        companyemail: companyemail,
-      });
-      if (user) {
-        return res.status(409).json({
-          success: false,
-          error: "Company Already Present please try to login",
+      const images = req.files;
+      const imageUrls = [];
+      for (const image of images) {
+        const unique = uuidv4();
+        const b64 = Buffer.from(image.buffer).toString("base64");
+        const dataURI = "data:" + image.mimetype + ";base64," + b64;
+        const result = await cloudinary.uploader.upload(dataURI, {
+          folder: "Ecommers Products",
+          public_id: unique,
         });
+        imageUrls.push(result.secure_url);
       }
 
-      const Salt = await bcrypt.genSalt(10);
-      const secPass = await bcrypt.hash(companypassword, Salt);
+      const {
+        Productsize,
+        Productprice,
+        Productname,
+        describtion,
+        Storesname,
+        ProductCategorie,
+      } = req.body;
 
-      user = await Company.create({
-        profile: url,
-        companyname: companyname,
-        companyowner: companyowner,
-        companyemail: companyemail,
-        companyownernumber: companyownernumber,
-        companypassword: secPass,
-        deliveryboyPrices: deliveryboyPrices,
-        companylocation: companylocation,
-        whatheis: "Product",
-      });
-      const data = {
-        id: user.id,
+      const productcat = ProductCategorie.split(",");
+      const productsize = Productsize.split(",");
 
-        role: "Product",
-      };
-      const authtoken = jwt.sign(data, process.env.SECRET_KEY);
-
-      res.cookie("company_auth_token", authtoken, {
-        httpOnly: true,
-        secure: true,
+      const product = await Product.create({
+        profile: imageUrls,
+        Productname: Productname,
+        Productsize: productsize,
+        Productprice: Productprice,
+        describtion: describtion,
+        Storesname: Storesname,
+        ProductCategorie: productcat,
       });
 
-      res.json({ success: true, authtoken });
+      await product.save();
+
+      const company = await Company.findById(req.company).populate("stores");
+      const storeIndex = company.stores.findIndex(
+        (store) => store._id.toString() === Storesname
+      );
+      if (storeIndex === -1) {
+        return res
+          .status(404)
+          .json({ success: false, error: " Store Not Found" });
+      } else {
+        await company.stores[storeIndex].products.push(product.id);
+        await company.save();
+      }
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).send("Internal Server Issue");
+      console.log(error);
+      res.status(500).json({ success: false, error: "Internal Server Issue" });
     }
   }
 );
@@ -699,18 +698,19 @@ router.post("/logout", (req, res) => {
 
 router.post("/refresh", handleRefreshToken);
 
-//testing
+//details
 
-router.post("/order", handleAccessToken, async (req, res) => {
-  try {
-    const user = await Company.findById(req.company);
+router.post("/finddetail", handleAccessToken, handledetails);
 
-    return res.json({
-      success: true,
-    });
-  } catch (error) {
-    return res.status(403).json({ error: "Internal Server Issue" });
+//getuser
+
+router.post("/products", async (req, res) => {
+  const { id } = req.body;
+  const store = await Store.findById(id).populate("products");
+  if (!store) {
+    return res.status(404).json({ success: false, error: "Not Found" });
   }
+  return res.json({ success: true, store });
 });
 
 module.exports = router;

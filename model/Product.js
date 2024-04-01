@@ -2,22 +2,22 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const ProductSchema = new Schema({
-  Productimages: [
+  profile: [
     {
       type: String,
       require: true,
     },
   ],
-  Productsizes: [
+
+  Productsize: [
     {
-      productsize: {
-        type: String,
-      },
-      productprice: {
-        type: Number,
-      },
+      type: String,
     },
   ],
+  Productprice: {
+    type: Number,
+  },
+
   Productname: {
     type: String,
     require: true,
