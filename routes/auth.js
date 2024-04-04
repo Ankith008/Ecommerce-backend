@@ -14,7 +14,7 @@ const Product = require("../model/Product");
 const Delivery = require("../model/Delivery");
 const Company = require("../model/Company");
 const Store = require("../model/Stores");
-require("dotenv").config({ path: "backend.env" });
+require("dotenv").config();
 const handleRefreshToken = require("../controllers/handleRefreshToken");
 const handleAccessToken = require("../middleware/handleAccessToken");
 const handledetails = require("../controllers/handledetails");
@@ -662,19 +662,25 @@ router.post(
       });
 
       await product.save();
-
-      const company = await Company.findById(req.company).populate("stores");
-      const storeIndex = company.stores.findIndex(
-        (store) => store._id.toString() === Storesname
+      const store = await Store.findByIdAndUpdate(
+        Storesname,
+        { $push: { products: product._id } },
+        { new: true }
       );
-      if (storeIndex === -1) {
-        return res
-          .status(404)
-          .json({ success: false, error: " Store Not Found" });
-      } else {
-        await company.stores[storeIndex].products.push(product.id);
-        await company.save();
-      }
+
+      // const company = await Company.findById(req.company).populate("stores");
+      // const storeIndex = company.stores.findIndex(
+      //   (store) => store._id.toString() === Storesname
+      // );
+      // if (storeIndex === -1) {
+      //   return res
+      //     .status(404)
+      //     .json({ success: false, error: " Store Not Found" });
+      // } else {
+      //   await company.stores[storeIndex].products.push(product._id);
+      //   await company.save();
+      // }
+
       return res.json({ success: true });
     } catch (error) {
       console.log(error);
@@ -701,16 +707,5 @@ router.post("/refresh", handleRefreshToken);
 //details
 
 router.post("/finddetail", handleAccessToken, handledetails);
-
-//getuser
-
-router.post("/products", async (req, res) => {
-  const { id } = req.body;
-  const store = await Store.findById(id).populate("products");
-  if (!store) {
-    return res.status(404).json({ success: false, error: "Not Found" });
-  }
-  return res.json({ success: true, store });
-});
 
 module.exports = router;
