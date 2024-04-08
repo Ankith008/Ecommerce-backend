@@ -13,7 +13,7 @@ require("dotenv").config({ path: "backend.env" });
 connectToMongo();
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "https://ecommerce-frontend-ten-beryl.vercel.app",
     credentials: true,
   })
 );

@@ -25,7 +25,18 @@ router.get("/store/:id", async (req, res) => {
   try {
     const storeid = req.params.id.toString();
     const store = await Store.findById(storeid).populate("products");
-    res.status(200).json({ success: true, store: store });
+    const stores = {
+      id: store._id,
+      storename: store.storename,
+      storeBranch: store.storeBranch,
+      storeIncharegename: store.storeIncharegename,
+      storeIncharegenumber: store.storeIncharegenumber,
+      storeAddress: store.storeAddress,
+      profile: store.profile,
+      storeemail: store.storeemail,
+      products: store.products,
+    };
+    res.status(200).json({ success: true, store: stores });
   } catch (error) {
     console.error("Error finding store:", error);
     res.status(500).json({ success: false, error: "Internal Server Error" });

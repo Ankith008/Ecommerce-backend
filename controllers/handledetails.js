@@ -4,7 +4,7 @@ require("dotenv").config({ path: "backend.env" });
 const Delivery = require("../model/Delivery");
 const Company = require("../model/Company");
 
-const handledetails = async (req, res, next) => {
+const handledetails = async (req, res) => {
   const data = req.headers.authorization;
   if (!data || !data.startsWith("Bearer ") || !data.split(" ")[1]) {
     return res.status(403).json({ error: "Not Authorized" });

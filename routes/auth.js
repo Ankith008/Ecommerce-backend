@@ -397,6 +397,11 @@ router.post(
         });
       }
 
+      let categorie = [];
+      if (categories.length !== 0) {
+        categorie = categories.split(",");
+      }
+
       store = await Store.create({
         profile: url,
         storename: storename,
@@ -406,7 +411,7 @@ router.post(
         storeAddress: storeAddress,
         storeemail: storeemail,
         companyname: req.company,
-        categories: categories,
+        categories: categorie,
         whatheis: "Store",
       });
 
