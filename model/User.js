@@ -21,7 +21,7 @@ const UserSchema = new Schema({
   orders: [
     {
       type: mongoose.Schema.ObjectId,
-      ref: "Product",
+      ref: "Notification",
     },
   ],
   addtocart: [

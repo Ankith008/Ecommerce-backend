@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { Schema } = mongoose;
+const Schema = mongoose.Schema;
 
 const ProductSchema = new Schema({
   profile: [
@@ -54,4 +54,4 @@ const ProductSchema = new Schema({
     },
   ],
 });
-module.exports = mongoose.model("Products", ProductSchema);
+module.exports = mongoose.model("Product", ProductSchema);

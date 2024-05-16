@@ -13,7 +13,16 @@ const handledetails = async (req, res) => {
 
   try {
     const decodeduser = jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET);
-    const user = await User.findById(decodeduser.id);
+    const users = await User.findById(decodeduser.id);
+    const user = {
+      id: users._id,
+      name: users.name,
+      email: users.email,
+      Address: users.Address,
+      phoneNumber: users.phoneNumber,
+      profile: users.profile,
+    };
+
     return res.json({ user });
   } catch (error) {
     try {

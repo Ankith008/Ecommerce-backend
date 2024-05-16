@@ -6,6 +6,7 @@ const StoresSchema = new Schema({
     type: String,
     require: true,
   },
+
   storeBranch: {
     type: String,
     require: true,
@@ -33,16 +34,25 @@ const StoresSchema = new Schema({
     type: mongoose.Schema.ObjectId,
     require: true,
   },
+  totalorders: {
+    type: Number,
+  },
   categories: [
     {
       type: String,
+    },
+  ],
+  orders: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "Notification",
     },
   ],
 
   products: [
     {
       type: mongoose.Schema.ObjectId,
-      ref: "Products",
+      ref: "Product",
     },
   ],
   whatheis: {

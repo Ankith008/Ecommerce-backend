@@ -30,6 +30,7 @@ const CompanySchema = new Schema({
     type: String,
     require: true,
   },
+
   stores: [
     {
       type: mongoose.Schema.ObjectId,

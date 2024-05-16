@@ -33,12 +33,11 @@ router.post(
   [
     body("name").isLength({ min: 3 }),
     body("email").isEmail(),
-    body("phoneNumber").isLength({ min: 10 }),
     body("password").isLength({ min: 5 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    const cookies = req.cookies;
+
     if (!errors.isEmpty()) {
       console.log(errors.array());
       return res.json({
@@ -697,12 +696,17 @@ router.post(
 //logout
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-  });
-  res.json({ success: true, redirect: "/" });
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+    });
+    return res.json({ success: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, error: "Internal Issue" });
+  }
 });
 
 //refresh token handle
