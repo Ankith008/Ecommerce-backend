@@ -717,4 +717,65 @@ router.post("/refresh", handleRefreshToken);
 
 router.post("/finddetail", handleAccessToken, handledetails);
 
+//update
+
+router.post("/update", handleAccessToken, async (req, res) => {
+  try {
+    const { id, name, email, prepassword, newpassword, Address, phoneNumber } =
+      req.body;
+    const users = await User.findById(id);
+    const passwordCompare = await bcrypt.compare(prepassword, users.password);
+    if (!passwordCompare) {
+      return res.status(400).json({
+        success: false,
+        error: "Please Enter the Valid Credencials",
+      });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const secpass = await bcrypt.hash(newpassword, salt);
+    const user = await User.findByIdAndUpdate(id, {
+      name: name,
+      email: email,
+      password: secpass,
+      Address: Address,
+      phoneNumber: phoneNumber,
+    });
+    return res.json({ success: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, error: "Internal Issue" });
+  }
+});
+
+router.post("/comupdate", handleAccessToken, async (req, res) => {
+  try {
+    const { id, name, email, prepassword, newpassword, Address, phoneNumber } =
+      req.body;
+    const users = await Company.findById(id);
+    const passwordCompare = await bcrypt.compare(
+      prepassword,
+      users.companypassword
+    );
+    if (!passwordCompare) {
+      return res.status(400).json({
+        success: false,
+        error: "Please Enter the Valid Credencials",
+      });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const secpass = await bcrypt.hash(newpassword, salt);
+    const user = await Company.findByIdAndUpdate(id, {
+      companyname: name,
+      companyemail: email,
+      companypassword: secpass,
+      companylocation: Address,
+      companyownernumber: phoneNumber,
+    });
+    return res.json({ success: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, error: "Internal Issue" });
+  }
+});
+
 module.exports = router;
